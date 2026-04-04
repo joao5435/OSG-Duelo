@@ -68,10 +68,8 @@ io.on("connection", (socket) => {
   socket.on("resposta", ({ salaId, respostaIndex }) => {
     const duelo = duelos[salaId];
     const uid = socket.uid;
-
     if (!duelo || !uid) return;
 
-    // evita responder duas vezes
     if (duelo.respostas[uid] !== undefined) return;
 
     const tempoResposta = (Date.now() - duelo.inicioPergunta) / 1000;
@@ -86,17 +84,38 @@ io.on("connection", (socket) => {
 
   socket.on("disconnect", () => {
     console.log("Desconectado", socket.id);
+
+    // 🚨 tratamento de saída
+    const salaId = socket.salaId;
+    const uid = socket.uid;
+
+    if (!salaId || !uid) return;
+    const duelo = duelos[salaId];
+    if (!duelo) return;
+
+    // remove usuário da sala
+    duelo.usuarios = duelo.usuarios.filter((u) => u !== uid);
+    delete duelo.pontuacao[uid];
+    delete duelo.streak[uid];
+    delete duelo.respostas[uid];
+
+    io.to(salaId).emit("usuarioSaiu", { uid });
+
+    // se só restou 1 jogador, finaliza duelo automaticamente
+    if (duelo.usuarios.length === 1) {
+      finalizarDuelo(salaId);
+    }
   });
 });
 
 function iniciarPergunta(salaId) {
   const duelo = duelos[salaId];
+  if (!duelo) return;
 
   duelo.respostas = {};
   duelo.inicioPergunta = Date.now();
 
   const pergunta = duelo.perguntas[duelo.perguntaAtual];
-
   if (!pergunta) return finalizarDuelo(salaId);
 
   io.to(salaId).emit("novaPergunta", {
@@ -111,7 +130,6 @@ function iniciarPergunta(salaId) {
 
 function verificarRespostas(salaId) {
   const duelo = duelos[salaId];
-
   if (!duelo) return;
 
   if (Object.keys(duelo.respostas).length === duelo.usuarios.length) {
@@ -195,14 +213,21 @@ async function finalizarDuelo(salaId) {
   const jogadores = duelo.pontuacao;
   const uids = Object.keys(jogadores);
 
-  if (uids.length < 2) return;
+  if (uids.length === 0) {
+    delete duelos[salaId];
+    return;
+  }
 
   const [uid1, uid2] = uids;
 
   let vencedor = null;
 
-  if (jogadores[uid1] > jogadores[uid2]) vencedor = uid1;
-  else if (jogadores[uid2] > jogadores[uid1]) vencedor = uid2;
+  if (uids.length === 1) {
+    vencedor = uids[0]; // jogador que ficou
+  } else {
+    if (jogadores[uid1] > jogadores[uid2]) vencedor = uid1;
+    else if (jogadores[uid2] > jogadores[uid1]) vencedor = uid2;
+  }
 
   if (vencedor) {
     await atualizarXP(vencedor, 50);
@@ -213,7 +238,7 @@ async function finalizarDuelo(salaId) {
     pontuacao: jogadores,
   });
 
-  // 🧹 limpa sala depois
+  // 🧹 limpa sala
   delete duelos[salaId];
 }
 

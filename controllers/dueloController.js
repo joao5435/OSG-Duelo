@@ -17,7 +17,6 @@ const materiasDisponiveis = [
   "cultura geral"
 ];
 
-
 // Verifica token do Firebase
 export async function verifyUser(token) {
   try {
@@ -32,7 +31,7 @@ export async function gerarPerguntasIA() {
   try {
     const materia =
       materiasDisponiveis[
-      Math.floor(Math.random() * materiasDisponiveis.length)
+        Math.floor(Math.random() * materiasDisponiveis.length)
       ];
 
     const prompt = `
@@ -85,7 +84,6 @@ Regras:
     try {
       perguntas = JSON.parse(texto);
 
-
       perguntas = perguntas.map((p) => ({
         ...p,
         correta: Number(p.correta),
@@ -95,7 +93,6 @@ Regras:
       return gerarFallback();
     }
 
-    // validação
     const valido =
       Array.isArray(perguntas) &&
       perguntas.every(
@@ -118,32 +115,160 @@ Regras:
   }
 }
 
+// 🔥 shuffle
+function shuffle(array) {
+  for (let i = array.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [array[i], array[j]] = [array[j], array[i]];
+  }
+  return array;
+}
+
+// 🔥 FALLBACK NOVO (GRANDE E 100% DIFERENTE)
 function gerarFallback() {
-  return [
+  const perguntas = [
+
+    // ➗ MATEMÁTICA
     {
-      pergunta: "Qual a capital do Brasil?",
-      alternativas: ["São Paulo", "Rio", "Brasília", "Salvador"],
-      correta: 2,
-    },
-    {
-      pergunta: "Quanto é 2 + 2?",
-      alternativas: ["3", "4", "5", "6"],
-      correta: 1,
-    },
-    {
-      pergunta: "Qual planeta é vermelho?",
-      alternativas: ["Terra", "Marte", "Júpiter", "Saturno"],
-      correta: 1,
-    },
-    {
-      pergunta: "Quem descobriu o Brasil?",
-      alternativas: ["Cabral", "Dom Pedro", "Tiradentes", "Getúlio"],
+      pergunta: "Quanto é 9 x 8?",
+      alternativas: ["72", "81", "64", "70"],
       correta: 0,
     },
     {
-      pergunta: "Quanto é 10 / 2?",
-      alternativas: ["2", "3", "5", "10"],
+      pergunta: "Quanto é 15 - 7?",
+      alternativas: ["6", "7", "8", "9"],
+      correta: 2,
+    },
+    {
+      pergunta: "Quanto é 12 x 12?",
+      alternativas: ["124", "144", "134", "154"],
+      correta: 1,
+    },
+    {
+      pergunta: "Quanto é 100 / 4?",
+      alternativas: ["20", "25", "30", "40"],
+      correta: 1,
+    },
+
+    // 🌍 GEOGRAFIA
+    {
+      pergunta: "Qual país tem o maior território do mundo?",
+      alternativas: ["China", "Estados Unidos", "Rússia", "Canadá"],
+      correta: 2,
+    },
+    {
+      pergunta: "Qual continente fica o Egito?",
+      alternativas: ["Ásia", "Europa", "África", "América"],
+      correta: 2,
+    },
+    {
+      pergunta: "Qual é o maior deserto do mundo?",
+      alternativas: ["Saara", "Atacama", "Antártida", "Gobi"],
+      correta: 2,
+    },
+
+    // 🔬 CIÊNCIAS
+    {
+      pergunta: "Qual órgão bombeia o sangue no corpo humano?",
+      alternativas: ["Pulmão", "Cérebro", "Coração", "Fígado"],
+      correta: 2,
+    },
+    {
+      pergunta: "Qual gás os humanos respiram para viver?",
+      alternativas: ["Oxigênio", "Hidrogênio", "Nitrogênio", "Carbono"],
+      correta: 0,
+    },
+    {
+      pergunta: "Qual é o estado físico do gelo?",
+      alternativas: ["Líquido", "Gasoso", "Sólido", "Plasma"],
+      correta: 2,
+    },
+
+    // 📜 HISTÓRIA
+    {
+      pergunta: "Quem foi o primeiro presidente do Brasil?",
+      alternativas: ["Getúlio Vargas", "Deodoro da Fonseca", "Lula", "Juscelino"],
+      correta: 1,
+    },
+    {
+      pergunta: "A Segunda Guerra Mundial terminou em qual ano?",
+      alternativas: ["1945", "1939", "1918", "1960"],
+      correta: 0,
+    },
+
+    // 📚 PORTUGUÊS
+    {
+      pergunta: "Qual dessas palavras está correta?",
+      alternativas: ["Excessão", "Exceção", "Exsesão", "Exceçãoo"],
+      correta: 1,
+    },
+    {
+      pergunta: "Qual é o antônimo de 'feliz'?",
+      alternativas: ["Triste", "Alegre", "Animado", "Sorridente"],
+      correta: 0,
+    },
+
+    // 🎭 ARTES
+    {
+      pergunta: "Qual instrumento tem teclas?",
+      alternativas: ["Violão", "Piano", "Bateria", "Flauta"],
+      correta: 1,
+    },
+
+    // 🌎 CULTURA GERAL
+    {
+      pergunta: "Quantas horas tem um dia?",
+      alternativas: ["12", "24", "48", "36"],
+      correta: 1,
+    },
+    {
+      pergunta: "Qual é a cor do céu em um dia limpo?",
+      alternativas: ["Verde", "Azul", "Amarelo", "Preto"],
+      correta: 1,
+    },
+
+    // 🧠 FILOSOFIA
+    {
+      pergunta: "Quem disse 'Só sei que nada sei'?",
+      alternativas: ["Platão", "Aristóteles", "Sócrates", "Descartes"],
+      correta: 2,
+    },
+
+    // 🌐 SOCIOLOGIA
+    {
+      pergunta: "O que é sociedade?",
+      alternativas: ["Um planeta", "Um grupo de pessoas", "Uma máquina", "Um animal"],
+      correta: 1,
+    },
+
+    // 📖 LITERATURA
+    {
+      pergunta: "O que é um poema?",
+      alternativas: ["Texto matemático", "Texto científico", "Texto literário", "Texto jurídico"],
+      correta: 2,
+    },
+
+    // 🔬 QUÍMICA
+    {
+      pergunta: "Qual elemento tem símbolo O?",
+      alternativas: ["Ouro", "Oxigênio", "Prata", "Ferro"],
+      correta: 1,
+    },
+
+    // ⚡ FÍSICA
+    {
+      pergunta: "Qual força puxa objetos para a Terra?",
+      alternativas: ["Magnetismo", "Gravidade", "Eletricidade", "Atrito"],
+      correta: 1,
+    },
+
+    // 🧬 BIOLOGIA
+    {
+      pergunta: "Qual parte do corpo humano pensa?",
+      alternativas: ["Coração", "Pulmão", "Cérebro", "Estômago"],
       correta: 2,
     },
   ];
+
+  return shuffle(perguntas);
 }

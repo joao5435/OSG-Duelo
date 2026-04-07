@@ -37,9 +37,6 @@ export async function gerarPerguntasIA() {
     const prompt = `
 Gere 10 perguntas de múltipla escolha sobre ${materia}.
 
-Dificuldade:
-- Fácil e média
-
 Formato OBRIGATÓRIO em JSON:
 
 [
@@ -61,12 +58,7 @@ Regras:
       "https://openrouter.ai/api/v1/chat/completions",
       {
         model: "gpt-4.1-mini",
-        messages: [
-          {
-            role: "user",
-            content: prompt,
-          },
-        ],
+        messages: [{ role: "user", content: prompt }],
         max_tokens: 800,
       },
       {
@@ -84,9 +76,11 @@ Regras:
     try {
       perguntas = JSON.parse(texto);
 
+      // 🔥 AQUI FOI CORRIGIDO (MATERIA)
       perguntas = perguntas.map((p) => ({
         ...p,
         correta: Number(p.correta),
+        materia,
       }));
     } catch (err) {
       console.error("Erro JSON IA:", texto);
@@ -104,7 +98,6 @@ Regras:
       );
 
     if (!valido) {
-      console.error("Formato inválido IA");
       return gerarFallback();
     }
 
@@ -124,149 +117,68 @@ function shuffle(array) {
   return array;
 }
 
-// 🔥 FALLBACK NOVO (GRANDE E 100% DIFERENTE)
+// 🔥 fallback com materia
 function gerarFallback() {
   const perguntas = [
-
-    // ➗ MATEMÁTICA
     {
       pergunta: "Quanto é 9 x 8?",
       alternativas: ["72", "81", "64", "70"],
       correta: 0,
+      materia: "matemática",
     },
     {
       pergunta: "Quanto é 15 - 7?",
       alternativas: ["6", "7", "8", "9"],
       correta: 2,
+      materia: "matemática",
     },
     {
-      pergunta: "Quanto é 12 x 12?",
-      alternativas: ["124", "144", "134", "154"],
-      correta: 1,
-    },
-    {
-      pergunta: "Quanto é 100 / 4?",
-      alternativas: ["20", "25", "30", "40"],
-      correta: 1,
-    },
-
-    // 🌍 GEOGRAFIA
-    {
-      pergunta: "Qual país tem o maior território do mundo?",
-      alternativas: ["China", "Estados Unidos", "Rússia", "Canadá"],
+      pergunta: "Qual país tem o maior território?",
+      alternativas: ["China", "EUA", "Rússia", "Canadá"],
       correta: 2,
+      materia: "geografia",
     },
     {
-      pergunta: "Qual continente fica o Egito?",
-      alternativas: ["Ásia", "Europa", "África", "América"],
-      correta: 2,
-    },
-    {
-      pergunta: "Qual é o maior deserto do mundo?",
-      alternativas: ["Saara", "Atacama", "Antártida", "Gobi"],
-      correta: 2,
-    },
-
-    // 🔬 CIÊNCIAS
-    {
-      pergunta: "Qual órgão bombeia o sangue no corpo humano?",
+      pergunta: "Qual órgão bombeia o sangue?",
       alternativas: ["Pulmão", "Cérebro", "Coração", "Fígado"],
       correta: 2,
+      materia: "biologia",
     },
-    {
-      pergunta: "Qual gás os humanos respiram para viver?",
-      alternativas: ["Oxigênio", "Hidrogênio", "Nitrogênio", "Carbono"],
-      correta: 0,
-    },
-    {
-      pergunta: "Qual é o estado físico do gelo?",
-      alternativas: ["Líquido", "Gasoso", "Sólido", "Plasma"],
-      correta: 2,
-    },
-
-    // 📜 HISTÓRIA
     {
       pergunta: "Quem foi o primeiro presidente do Brasil?",
-      alternativas: ["Getúlio Vargas", "Deodoro da Fonseca", "Lula", "Juscelino"],
+      alternativas: ["Lula", "Deodoro", "Getúlio", "Juscelino"],
       correta: 1,
+      materia: "história",
     },
     {
-      pergunta: "A Segunda Guerra Mundial terminou em qual ano?",
-      alternativas: ["1945", "1939", "1918", "1960"],
-      correta: 0,
-    },
-
-    // 📚 PORTUGUÊS
-    {
-      pergunta: "Qual dessas palavras está correta?",
-      alternativas: ["Excessão", "Exceção", "Exsesão", "Exceçãoo"],
-      correta: 1,
-    },
-    {
-      pergunta: "Qual é o antônimo de 'feliz'?",
+      pergunta: "Qual é o antônimo de feliz?",
       alternativas: ["Triste", "Alegre", "Animado", "Sorridente"],
       correta: 0,
+      materia: "português",
     },
-
-    // 🎭 ARTES
     {
       pergunta: "Qual instrumento tem teclas?",
-      alternativas: ["Violão", "Piano", "Bateria", "Flauta"],
+      alternativas: ["Violão", "Piano", "Flauta", "Bateria"],
       correta: 1,
+      materia: "artes",
     },
-
-    // 🌎 CULTURA GERAL
-    {
-      pergunta: "Quantas horas tem um dia?",
-      alternativas: ["12", "24", "48", "36"],
-      correta: 1,
-    },
-    {
-      pergunta: "Qual é a cor do céu em um dia limpo?",
-      alternativas: ["Verde", "Azul", "Amarelo", "Preto"],
-      correta: 1,
-    },
-
-    // 🧠 FILOSOFIA
-    {
-      pergunta: "Quem disse 'Só sei que nada sei'?",
-      alternativas: ["Platão", "Aristóteles", "Sócrates", "Descartes"],
-      correta: 2,
-    },
-
-    // 🌐 SOCIOLOGIA
-    {
-      pergunta: "O que é sociedade?",
-      alternativas: ["Um planeta", "Um grupo de pessoas", "Uma máquina", "Um animal"],
-      correta: 1,
-    },
-
-    // 📖 LITERATURA
-    {
-      pergunta: "O que é um poema?",
-      alternativas: ["Texto matemático", "Texto científico", "Texto literário", "Texto jurídico"],
-      correta: 2,
-    },
-
-    // 🔬 QUÍMICA
-    {
-      pergunta: "Qual elemento tem símbolo O?",
-      alternativas: ["Ouro", "Oxigênio", "Prata", "Ferro"],
-      correta: 1,
-    },
-
-    // ⚡ FÍSICA
     {
       pergunta: "Qual força puxa objetos para a Terra?",
       alternativas: ["Magnetismo", "Gravidade", "Eletricidade", "Atrito"],
       correta: 1,
+      materia: "fisica",
     },
-
-    // 🧬 BIOLOGIA
     {
-      pergunta: "Qual parte do corpo humano pensa?",
-      alternativas: ["Coração", "Pulmão", "Cérebro", "Estômago"],
-      correta: 2,
+      pergunta: "Qual elemento tem símbolo O?",
+      alternativas: ["Ouro", "Oxigênio", "Prata", "Ferro"],
+      correta: 1,
+      materia: "quimica",
+    },
+    {
+      pergunta: "Quem disse 'Só sei que nada sei'?",
+      alternativas: ["Platão", "Sócrates", "Aristóteles", "Descartes"],
+      correta: 1,
+      materia: "filosofia",
     },
   ];
 

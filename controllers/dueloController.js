@@ -51,7 +51,6 @@ Regras:
 - Apenas JSON
 - 4 alternativas
 - Apenas UMA correta
-- NÃO use "todas as alternativas" ou "nenhuma das alternativas"
 `;
 
     const response = await axios.post(
@@ -69,35 +68,45 @@ Regras:
       }
     );
 
-    const texto = response.data.choices[0].message.content;
+    let texto = response.data.choices[0].message.content;
+
+    // 🔥 LIMPEZA DO JSON
+    texto = texto.replace(/```json|```/g, "").trim();
+
+    // 🔥 PEGA SÓ O ARRAY
+    const match = texto.match(/\[[\s\S]*\]/);
+    if (match) {
+      texto = match[0];
+    }
 
     let perguntas;
 
     try {
       perguntas = JSON.parse(texto);
 
-      // 🔥 AQUI FOI CORRIGIDO (MATERIA)
-      perguntas = perguntas.map((p) => ({
-        ...p,
-        correta: Number(p.correta),
-        materia,
-      }));
+      // 🔥 FILTRO + PADRONIZAÇÃO + MATERIA
+      perguntas = perguntas
+        .filter(
+          (p) =>
+            p &&
+            typeof p.pergunta === "string" &&
+            Array.isArray(p.alternativas) &&
+            p.alternativas.length === 4 &&
+            typeof p.correta !== "undefined"
+        )
+        .map((p) => ({
+          pergunta: p.pergunta,
+          alternativas: p.alternativas,
+          correta: Number(p.correta),
+          materia,
+        }));
+
     } catch (err) {
       console.error("Erro JSON IA:", texto);
       return gerarFallback();
     }
 
-    const valido =
-      Array.isArray(perguntas) &&
-      perguntas.every(
-        (p) =>
-          p.pergunta &&
-          Array.isArray(p.alternativas) &&
-          p.alternativas.length === 4 &&
-          typeof p.correta === "number"
-      );
-
-    if (!valido) {
+    if (!Array.isArray(perguntas) || perguntas.length === 0) {
       return gerarFallback();
     }
 
@@ -108,7 +117,7 @@ Regras:
   }
 }
 
-// 🔥 shuffle
+// 🔥 SHUFFLE
 function shuffle(array) {
   for (let i = array.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
@@ -117,7 +126,7 @@ function shuffle(array) {
   return array;
 }
 
-// 🔥 fallback com materia
+// 🔥 FALLBACK GRANDE COM MATÉRIA
 function gerarFallback() {
   const perguntas = [
     {
@@ -127,14 +136,20 @@ function gerarFallback() {
       materia: "matemática",
     },
     {
-      pergunta: "Quanto é 15 - 7?",
-      alternativas: ["6", "7", "8", "9"],
-      correta: 2,
+      pergunta: "Quanto é 12 x 12?",
+      alternativas: ["124", "144", "134", "154"],
+      correta: 1,
       materia: "matemática",
     },
     {
-      pergunta: "Qual país tem o maior território?",
+      pergunta: "Qual país tem o maior território do mundo?",
       alternativas: ["China", "EUA", "Rússia", "Canadá"],
+      correta: 2,
+      materia: "geografia",
+    },
+    {
+      pergunta: "Qual continente fica o Egito?",
+      alternativas: ["Ásia", "Europa", "África", "América"],
       correta: 2,
       materia: "geografia",
     },
@@ -145,15 +160,33 @@ function gerarFallback() {
       materia: "biologia",
     },
     {
+      pergunta: "Qual gás é essencial para respiração humana?",
+      alternativas: ["Nitrogênio", "Oxigênio", "Carbono", "Hidrogênio"],
+      correta: 1,
+      materia: "biologia",
+    },
+    {
       pergunta: "Quem foi o primeiro presidente do Brasil?",
       alternativas: ["Lula", "Deodoro", "Getúlio", "Juscelino"],
       correta: 1,
       materia: "história",
     },
     {
+      pergunta: "A Segunda Guerra Mundial terminou em?",
+      alternativas: ["1945", "1939", "1918", "1960"],
+      correta: 0,
+      materia: "história",
+    },
+    {
       pergunta: "Qual é o antônimo de feliz?",
       alternativas: ["Triste", "Alegre", "Animado", "Sorridente"],
       correta: 0,
+      materia: "português",
+    },
+    {
+      pergunta: "Qual dessas palavras está correta?",
+      alternativas: ["Excessão", "Exceção", "Exsesão", "Exceçãoo"],
+      correta: 1,
       materia: "português",
     },
     {
@@ -179,6 +212,18 @@ function gerarFallback() {
       alternativas: ["Platão", "Sócrates", "Aristóteles", "Descartes"],
       correta: 1,
       materia: "filosofia",
+    },
+    {
+      pergunta: "O que é sociedade?",
+      alternativas: ["Planeta", "Grupo de pessoas", "Máquina", "Animal"],
+      correta: 1,
+      materia: "sociologia",
+    },
+    {
+      pergunta: "O que é um poema?",
+      alternativas: ["Texto científico", "Texto literário", "Texto jurídico", "Texto técnico"],
+      correta: 1,
+      materia: "literatura",
     },
   ];
 

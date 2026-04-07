@@ -2,8 +2,7 @@ import express from "express";
 import http from "http";
 import { Server } from "socket.io";
 import { verifyUser, gerarPerguntasIA } from "./controllers/dueloController.js";
-import { atualizarXP } from "./utils/firestore.js";
-import { getFirestore, doc, updateDoc, increment } from "firebase/firestore";
+import admin from "./utils/firebaseAdmin.js"; 
 import dotenv from "dotenv";
 
 dotenv.config();
@@ -16,7 +15,7 @@ const io = new Server(server, {
 });
 
 const duelos = {};
-const TEMPO_PERGUNTA = 30; // 🔥 ALTERADO PARA 30s
+const TEMPO_PERGUNTA = 30;
 const TOTAL_PERGUNTAS = 7;
 
 io.on("connection", (socket) => {
@@ -39,10 +38,10 @@ io.on("connection", (socket) => {
           perguntaAtual: 0,
           respostas: {},
           streak: {},
+          acertos: {},
           iniciado: false,
           timer: null,
           inicioPergunta: null,
-          acertos: {}, // 🔥 NOVO: controlar acertos
         };
       }
 
@@ -52,7 +51,7 @@ io.on("connection", (socket) => {
         duelo.usuarios.push(uid);
         duelo.pontuacao[uid] = 0;
         duelo.streak[uid] = 0;
-        duelo.acertos[uid] = 0; // 🔥 inicializa
+        duelo.acertos[uid] = 0;
       }
 
       if (duelo.usuarios.length === 2 && !duelo.iniciado) {
@@ -86,8 +85,6 @@ io.on("connection", (socket) => {
   });
 
   socket.on("disconnect", () => {
-    console.log("Desconectado", socket.id);
-
     const salaId = socket.salaId;
     const uid = socket.uid;
 
@@ -103,6 +100,7 @@ io.on("connection", (socket) => {
 
     io.to(salaId).emit("usuarioSaiu", { uid });
 
+    // 🔥 GARANTE FINALIZAÇÃO
     if (duelo.usuarios.length === 1) {
       finalizarDuelo(salaId);
     }
@@ -134,10 +132,7 @@ function verificarRespostas(salaId) {
   if (!duelo) return;
 
   if (Object.keys(duelo.respostas).length === duelo.usuarios.length) {
-    if (duelo.timer) {
-      clearTimeout(duelo.timer);
-      duelo.timer = null;
-    }
+    clearTimeout(duelo.timer);
     finalizarPergunta(salaId);
   }
 }
@@ -146,10 +141,7 @@ function finalizarPergunta(salaId) {
   const duelo = duelos[salaId];
   if (!duelo) return;
 
-  if (duelo.timer) {
-    clearTimeout(duelo.timer);
-    duelo.timer = null;
-  }
+  clearTimeout(duelo.timer);
 
   const pergunta = duelo.perguntas[duelo.perguntaAtual];
   if (!pergunta) return finalizarDuelo(salaId);
@@ -173,13 +165,9 @@ function finalizarPergunta(salaId) {
 
       duelo.streak[uid] += 1;
 
-      if (duelo.streak[uid] >= 3) {
-        pontos += 2;
-      }
+      if (duelo.streak[uid] >= 3) pontos += 2;
 
       duelo.pontuacao[uid] += pontos;
-
-      // 🔥 CONTA ACERTO
       duelo.acertos[uid] += 1;
     } else {
       duelo.streak[uid] = 0;
@@ -190,8 +178,6 @@ function finalizarPergunta(salaId) {
   io.to(salaId).emit("resultadoResposta", {
     correta: pergunta.correta,
     pontuacao: duelo.pontuacao,
-    streak: duelo.streak,
-    respostas: duelo.respostas,
   });
 
   setTimeout(() => {
@@ -212,47 +198,34 @@ async function finalizarDuelo(salaId) {
   const jogadores = duelo.pontuacao;
   const uids = Object.keys(jogadores);
 
-  if (uids.length === 0) {
-    delete duelos[salaId];
-    return;
-  }
+  if (uids.length === 0) return;
 
   const [uid1, uid2] = uids;
-
   let vencedor = null;
 
-  if (uids.length === 1) {
-    vencedor = uids[0];
-  } else {
+  if (uids.length === 1) vencedor = uids[0];
+  else {
     if (jogadores[uid1] > jogadores[uid2]) vencedor = uid1;
     else if (jogadores[uid2] > jogadores[uid1]) vencedor = uid2;
   }
 
-  const db = getFirestore();
+  const db = admin.firestore();
 
   for (const uid of uids) {
     const acertos = duelo.acertos[uid] || 0;
-
-    // 🔥 XP base por acertos (mesmo perdendo)
-    const xpBase = acertos * 5;
-
-    let xpTotal = xpBase;
+    let xp = acertos * 5;
 
     if (uid === vencedor) {
-      xpTotal += 30; // 🔥 vitória agora é 30
+      xp += 30;
 
-      // 🔥 incrementa duelos vencidos
-      try {
-        const ref = doc(db, "users", uid);
-        await updateDoc(ref, {
-          duelosVencidos: increment(1),
-        });
-      } catch (e) {
-        console.log("Erro ao atualizar vitórias:", e);
-      }
+      await db.collection("users").doc(uid).update({
+        duelosVencidos: admin.firestore.FieldValue.increment(1),
+      });
     }
 
-    await atualizarXP(uid, xpTotal);
+    await db.collection("users").doc(uid).update({
+      xp: admin.firestore.FieldValue.increment(xp),
+    });
   }
 
   io.to(salaId).emit("fimDeJogo", {

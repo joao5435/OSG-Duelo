@@ -14,7 +14,8 @@ const materiasDisponiveis = [
   "geografia",
   "sociologia",
   "literatura",
-  "cultura geral"
+  "cultura geral",
+  "informatica"
 ];
 
 // Verifica token do Firebase
